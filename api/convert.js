@@ -18,58 +18,32 @@ module.exports = async (req, res) => {
   let browser = null;
 
   try {
-    console.log('=== REQUEST START ===');
-    console.log('Request body:', req.body);
-    
     const { html } = req.body;
     
     if (!html) {
-      console.log('ERROR: No HTML provided');
       return res.status(400).json({ error: 'No HTML content provided' });
     }
 
-    console.log('HTML received, length:', html.length);
-    console.log('Starting Puppeteer browser...');
-    
-    // These are the EXACT args needed for @sparticuz/chromium v126 on Node 22
+    // Launch browser with minimal, proven args
     browser = await puppeteer.launch({
       args: [
         ...chromium.args,
         '--no-sandbox',
         '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--no-first-run',
-        '--no-zygote',
-        '--disable-gpu',
-        '--single-process',
-        '--disable-background-timer-throttling',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-renderer-backgrounding',
-        '--disable-features=TranslateUI',
-        '--disable-ipc-flooding-protection',
-        '--disable-extensions',
-        '--disable-default-apps'
+        '--disable-dev-shm-usage'
       ],
       defaultViewport: chromium.defaultViewport,
       executablePath: await chromium.executablePath(),
       headless: chromium.headless,
-      ignoreHTTPSErrors: true,
     });
 
-    console.log('Browser launched successfully');
     const page = await browser.newPage();
     
-    await page.setViewport({ width: 1200, height: 800 });
-    
-    console.log('Setting page content...');
     await page.setContent(html, { 
       waitUntil: 'domcontentloaded',
       timeout: 15000 
     });
-    console.log('Content set successfully');
 
-    console.log('Generating PDF...');
     const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true,
@@ -78,39 +52,28 @@ module.exports = async (req, res) => {
         right: '10mm',
         bottom: '15mm',
         left: '10mm'
-      },
-      scale: 0.8
+      }
     });
-    console.log('PDF generated, size:', pdfBuffer.length);
 
     await browser.close();
-    browser = null;
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="document.pdf"');
     
-    console.log('=== SUCCESS ===');
     return res.send(pdfBuffer);
 
   } catch (error) {
-    console.error('=== ERROR DETAILS ===');
-    console.error('Error name:', error.name);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
-    console.error('==================');
+    console.error('PDF generation error:', error.message);
     
     if (browser) {
       try {
         await browser.close();
-      } catch (closeError) {
-        console.error('Error closing browser:', closeError.message);
-      }
+      } catch (e) {}
     }
     
     return res.status(500).json({ 
       error: 'PDF generation failed', 
-      message: error.message,
-      name: error.name
+      message: error.message
     });
   }
 };
