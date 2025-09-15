@@ -2,10 +2,10 @@
   "name": "html-pdf-converter",
   "version": "1.0.0",
   "dependencies": {
-    "puppeteer-core": "^21.11.0",
-    "@sparticuz/chromium": "^121.0.0"
+    "puppeteer-core": "^23.5.0",
+    "@sparticuz/chromium": "^123.0.1"
   },
   "engines": {
-    "node": "18.x"
+    "node": "22.x"
   }
 }
