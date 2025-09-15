@@ -1,0 +1,13 @@
+{
+  "functions": {
+    "api/convert.js": {
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/api/status"
+    }
+  ]
+}
