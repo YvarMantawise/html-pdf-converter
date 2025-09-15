@@ -24,7 +24,7 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'No HTML content provided' });
     }
 
-    // Launch browser with minimal, proven args
+    // New configuration for latest versions
     browser = await puppeteer.launch({
       args: [
         ...chromium.args,
@@ -32,9 +32,17 @@ module.exports = async (req, res) => {
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage'
       ],
-      defaultViewport: chromium.defaultViewport,
+      defaultViewport: {
+        width: 1920,
+        height: 1080,
+        deviceScaleFactor: 1,
+        isMobile: false,
+        hasTouch: false,
+        isLandscape: true,
+      },
       executablePath: await chromium.executablePath(),
-      headless: chromium.headless,
+      headless: "shell", // Required for v138+
+      ignoreHTTPSErrors: true,
     });
 
     const page = await browser.newPage();
