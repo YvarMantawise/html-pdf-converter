@@ -1,21 +1,33 @@
-import puppeteer from 'puppeteer-core';
-import chromium from '@sparticuz/chromium';
+const puppeteer = require('puppeteer-core');
+const chromium = require('@sparticuz/chromium');
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
+  // CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
+    console.log('Request received, parsing body...');
+    
     const { html } = req.body;
     
     if (!html) {
+      console.log('No HTML provided');
       return res.status(400).json({ error: 'No HTML content provided' });
     }
 
+    console.log('HTML received, length:', html.length);
     console.log('Starting browser...');
     
-    // Vercel-optimized browser config
     const browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
@@ -23,51 +35,44 @@ export default async function handler(req, res) {
       headless: chromium.headless,
     });
 
+    console.log('Browser started, creating page...');
     const page = await browser.newPage();
     
-    // Viewport voor perfecte rendering
     await page.setViewport({ width: 1200, height: 800 });
     
-    // HTML laden met alle styling
+    console.log('Setting content...');
     await page.setContent(html, { 
       waitUntil: ['networkidle0', 'domcontentloaded'],
       timeout: 25000 
     });
 
-    // Wacht op fonts
-    await page.evaluateHandle('document.fonts.ready');
-
-    console.log('Generating PDF with exact layout...');
-
-    // PDF met 100% layout behoud
+    console.log('Generating PDF...');
     const pdfBuffer = await page.pdf({
       format: 'A4',
-      printBackground: true, // CRUCIAAL voor je styling
+      printBackground: true,
       margin: {
         top: '15mm',
         right: '10mm',
         bottom: '15mm',
         left: '10mm'
       },
-      preferCSSPageSize: false,
-      displayHeaderFooter: false,
       scale: 0.8
     });
 
     await browser.close();
     console.log('PDF generated successfully');
 
-    // PDF response
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="feedbackrapport.pdf"');
     
     return res.send(pdfBuffer);
 
   } catch (error) {
-    console.error('PDF generation error:', error);
+    console.error('Detailed error:', error);
     return res.status(500).json({ 
-      error: 'Failed to generate PDF', 
-      details: error.message 
+      error: 'PDF generation failed', 
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
-}
+};
