@@ -1,13 +1,14 @@
 {
   "functions": {
     "api/convert.js": {
-      "maxDuration": 30
+      "maxDuration": 30,
+      "memory": 1024
     }
   },
   "rewrites": [
     {
       "source": "/",
-      "destination": "/api/status"
+      "destination": "/public/index.html"
     }
   ]
 }
