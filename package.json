@@ -2,8 +2,8 @@
   "name": "html-pdf-converter",
   "version": "1.0.0",
   "dependencies": {
-    "puppeteer-core": "^23.5.0",
-    "@sparticuz/chromium": "^123.0.1"
+    "playwright-core": "^1.45.0",
+    "@playwright/test": "^1.45.0"
   },
   "engines": {
     "node": "22.x"
