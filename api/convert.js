@@ -1,4 +1,5 @@
-const { chromium } = require('playwright-core');
+const puppeteer = require('puppeteer-core');
+const chromium = require('@sparticuz/chromium');
 
 module.exports = async (req, res) => {
   // CORS headers
@@ -28,25 +29,38 @@ module.exports = async (req, res) => {
     }
 
     console.log('HTML received, length:', html.length);
-    console.log('Starting Playwright browser...');
+    console.log('Starting Puppeteer browser...');
     
-    // Playwright handles serverless environments much better
-    browser = await chromium.launch({
-      headless: true,
+    // These are the EXACT args needed for @sparticuz/chromium v126 on Node 22
+    browser = await puppeteer.launch({
       args: [
+        ...chromium.args,
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
-        '--disable-gpu',
+        '--disable-accelerated-2d-canvas',
         '--no-first-run',
         '--no-zygote',
+        '--disable-gpu',
         '--single-process',
-        '--disable-background-timer-throttling'
-      ]
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding',
+        '--disable-features=TranslateUI',
+        '--disable-ipc-flooding-protection',
+        '--disable-extensions',
+        '--disable-default-apps'
+      ],
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
+      ignoreHTTPSErrors: true,
     });
 
     console.log('Browser launched successfully');
     const page = await browser.newPage();
+    
+    await page.setViewport({ width: 1200, height: 800 });
     
     console.log('Setting page content...');
     await page.setContent(html, { 
@@ -61,7 +75,7 @@ module.exports = async (req, res) => {
       printBackground: true,
       margin: {
         top: '15mm',
-        right: '10mm', 
+        right: '10mm',
         bottom: '15mm',
         left: '10mm'
       },
