@@ -1,14 +1,9 @@
 {
   "name": "html-pdf-converter",
   "version": "1.0.0",
-  "description": "Convert HTML to PDF for Make.com",
-  "main": "api/convert.js",
-  "scripts": {
-    "dev": "vercel dev",
-    "build": "echo 'No build step'"
-  },
   "dependencies": {
-    "puppeteer": "^21.3.6"
+    "puppeteer-core": "^22.0.0",
+    "@sparticuz/chromium": "^126.0.0"
   },
   "engines": {
     "node": "22.x"
