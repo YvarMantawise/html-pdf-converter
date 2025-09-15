@@ -15,8 +15,12 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  let browser = null;
+
   try {
     console.log('Request received, parsing body...');
+    console.log('Request body:', req.body);
+    console.log('Body type:', typeof req.body);
     
     const { html } = req.body;
     
@@ -28,11 +32,28 @@ module.exports = async (req, res) => {
     console.log('HTML received, length:', html.length);
     console.log('Starting browser...');
     
-    const browser = await puppeteer.launch({
-      args: chromium.args,
+    // CRITICAL: These args are essential for Vercel
+    browser = await puppeteer.launch({
+      args: [
+        ...chromium.args,
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--disable-gpu',
+        '--single-process', // Important for serverless
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding',
+        '--disable-features=TranslateUI',
+        '--disable-ipc-flooding-protection'
+      ],
       defaultViewport: chromium.defaultViewport,
       executablePath: await chromium.executablePath(),
       headless: chromium.headless,
+      ignoreHTTPSErrors: true,
     });
 
     console.log('Browser started, creating page...');
@@ -41,9 +62,10 @@ module.exports = async (req, res) => {
     await page.setViewport({ width: 1200, height: 800 });
     
     console.log('Setting content...');
+    // CRITICAL: Only use domcontentloaded, not networkidle0
     await page.setContent(html, { 
-      waitUntil: ['networkidle0', 'domcontentloaded'],
-      timeout: 25000 
+      waitUntil: ['domcontentloaded'],
+      timeout: 15000 
     });
 
     console.log('Generating PDF...');
@@ -60,7 +82,8 @@ module.exports = async (req, res) => {
     });
 
     await browser.close();
-    console.log('PDF generated successfully');
+    browser = null; // Prevent double-close
+    console.log('PDF generated successfully, size:', pdfBuffer.length);
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="feedbackrapport.pdf"');
@@ -68,11 +91,25 @@ module.exports = async (req, res) => {
     return res.send(pdfBuffer);
 
   } catch (error) {
-    console.error('Detailed error:', error);
+    console.error('=== DETAILED ERROR ===');
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    console.error('====================');
+    
+    // Ensure browser cleanup
+    if (browser) {
+      try {
+        await browser.close();
+      } catch (closeError) {
+        console.error('Error closing browser:', closeError.message);
+      }
+    }
+    
     return res.status(500).json({ 
       error: 'PDF generation failed', 
       message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      name: error.name
     });
   }
 };
