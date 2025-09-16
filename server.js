@@ -1,31 +1,59 @@
 import express from 'express';
 import cors from 'cors';
 import puppeteer from 'puppeteer';
-import multer from 'multer'; // <-- nieuw
+import multer from 'multer';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Authentication configuration
+const API_KEY = process.env.API_KEY || 'your-secret-api-key-here'; // Set this in your environment variables
+
 // Middleware
 app.use(cors());
-// app.use(express.json({ limit: '10mb' })); // JSON niet meer nodig voor HTML via form-data
-const upload = multer(); // memory storage, alleen voor text fields
+const upload = multer(); // memory storage, only for text fields
 
-// Health check
+// Authentication middleware
+const authenticateAPI = (req, res, next) => {
+  // Check for API key in different possible header formats
+  const apiKey = req.headers['x-api-key'] || 
+                 req.headers['authorization']?.replace('Bearer ', '') ||
+                 req.headers['api-key'];
+
+  if (!apiKey) {
+    return res.status(401).json({ 
+      error: 'Authentication required', 
+      message: 'API key must be provided in x-api-key header' 
+    });
+  }
+
+  if (apiKey !== API_KEY) {
+    return res.status(403).json({ 
+      error: 'Invalid API key', 
+      message: 'The provided API key is not valid' 
+    });
+  }
+
+  // API key is valid, continue to the next middleware/route
+  next();
+};
+
+// Public health check (no authentication needed)
 app.get('/', (req, res) => {
   res.json({
     status: 'online',
     message: 'HTML to PDF Converter is running on Railway!',
-    endpoint: '/convert'
+    endpoint: '/convert',
+    note: 'Authentication required for /convert endpoint'
   });
 });
 
-// PDF conversion endpoint
-app.post('/convert', upload.none(), async (req, res) => {
+// Protected PDF conversion endpoint
+app.post('/convert', authenticateAPI, upload.none(), async (req, res) => {
   let browser = null;
 
   try {
-    const { html } = req.body; // <-- nu komt HTML uit form-data
+    const { html } = req.body;
     if (!html) {
       return res.status(400).json({ error: 'No HTML content provided' });
     }
@@ -87,6 +115,15 @@ app.post('/convert', upload.none(), async (req, res) => {
   }
 });
 
+// Optional: Add a test endpoint to verify authentication
+app.get('/test-auth', authenticateAPI, (req, res) => {
+  res.json({ 
+    message: 'Authentication successful!', 
+    timestamp: new Date().toISOString() 
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`API Key required for protected endpoints: ${API_KEY ? 'Yes' : 'No'}`);
 });
