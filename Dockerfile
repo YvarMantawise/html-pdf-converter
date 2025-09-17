@@ -1,15 +1,11 @@
 # Use Node.js 22 with all dependencies for Puppeteer
 FROM node:22-slim
 
-# Install dependencies needed for Chromium AND emoji fonts
+# Install dependencies needed for Chromium
 RUN apt-get update && apt-get install -y \
     wget \
     ca-certificates \
     fonts-liberation \
-    fonts-noto-color-emoji \
-    fonts-noto-emoji \
-    fonts-dejavu-core \
-    fontconfig \
     libappindicator3-1 \
     libasound2 \
     libatk-bridge2.0-0 \
@@ -28,9 +24,6 @@ RUN apt-get update && apt-get install -y \
     --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
-
-# Update font cache
-RUN fc-cache -fv
 
 # Set working directory
 WORKDIR /app
