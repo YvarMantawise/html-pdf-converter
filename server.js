@@ -7,15 +7,14 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Authentication configuration
-const API_KEY = process.env.API_KEY || 'your-secret-api-key-here'; // Set this in your environment variables
+const API_KEY = process.env.API_KEY || 'your-secret-api-key-here';
 
 // Middleware
 app.use(cors());
-const upload = multer(); // memory storage, only for text fields
+const upload = multer();
 
 // Authentication middleware
 const authenticateAPI = (req, res, next) => {
-  // Check for API key in different possible header formats
   const apiKey = req.headers['x-api-key'] || 
                  req.headers['authorization']?.replace('Bearer ', '') ||
                  req.headers['api-key'];
@@ -34,11 +33,10 @@ const authenticateAPI = (req, res, next) => {
     });
   }
 
-  // API key is valid, continue to the next middleware/route
   next();
 };
 
-// Public health check (no authentication needed)
+// Public health check
 app.get('/', (req, res) => {
   res.json({
     status: 'online',
@@ -69,15 +67,42 @@ app.post('/convert', authenticateAPI, upload.none(), async (req, res) => {
         '--disable-accelerated-2d-canvas',
         '--no-first-run',
         '--no-zygote',
-        '--disable-gpu'
+        '--disable-gpu',
+        '--font-render-hinting=none' // Better font rendering
       ]
     });
 
     const page = await browser.newPage();
+    
+    // Add emoji CSS support BEFORE setting content
+    await page.addStyleTag({
+      content: `
+        * {
+          font-family: 'Segoe UI', 'Apple Color Emoji', 'Noto Color Emoji', 'Noto Emoji', system-ui, sans-serif !important;
+        }
+        
+        /* Specific emoji styling */
+        .emoji, [class*="emoji"] {
+          font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Noto Emoji' !important;
+          font-size: inherit;
+          line-height: inherit;
+        }
+        
+        /* Ensure emoji characters are displayed */
+        body {
+          -webkit-font-feature-settings: "liga", "kern";
+          font-feature-settings: "liga", "kern";
+        }
+      `
+    });
+    
     await page.setContent(html, {
       waitUntil: 'domcontentloaded',
       timeout: 30000
     });
+
+    // Wait a bit extra for fonts to load
+    await page.waitForTimeout(1000);
 
     const pdfBuffer = await page.pdf({
       format: 'A4',
