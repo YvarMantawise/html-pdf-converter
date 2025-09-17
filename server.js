@@ -161,10 +161,10 @@ app.post('/convert', authenticateAPI, upload.none(), async (req, res) => {
       format: 'A4',
       printBackground: true,
       margin: {
-        top: '15mm',
-        right: '10mm',
-        bottom: '15mm',
-        left: '10mm'
+        top: '0mm',
+        right: '0mm',
+        bottom: '0mm',
+        left: '0mm'
       }
     });
 
