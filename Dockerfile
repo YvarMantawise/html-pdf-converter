@@ -1,7 +1,7 @@
 # Use Node.js 22 with all dependencies for Puppeteer
 FROM node:22-slim
 
-# Install dependencies needed for Chromium
+# Install dependencies needed for Chromium AND emoji fonts
 RUN apt-get update && apt-get install -y \
     wget \
     ca-certificates \
@@ -21,9 +21,22 @@ RUN apt-get update && apt-get install -y \
     libxdamage1 \
     libxrandr2 \
     xdg-utils \
-    --no-install-recommends \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    fonts-noto-color-emoji \
+    fonts-dejavu-core \
+    fontconfig \
+    --no-install-recommends
+
+# Clean up to reduce image size
+RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Download Google's Noto Color Emoji font manually as backup
+# (in case the package version is outdated)
+RUN mkdir -p /usr/share/fonts/truetype/noto && \
+    wget -q "https://github.com/googlefonts/noto-emoji/raw/main/fonts/NotoColorEmoji.ttf" \
+    -O /usr/share/fonts/truetype/noto/NotoColorEmoji.ttf || true
+
+# Update font cache to recognize all fonts
+RUN fc-cache -f -v
 
 # Set working directory
 WORKDIR /app
