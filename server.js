@@ -50,56 +50,54 @@ app.get('/', (req, res) => {
 
 // Function to add comprehensive emoji CSS support to HTML
 const addEmojiSupport = (html) => {
-  // Uitgebreide CSS voor emoji ondersteuning met fallbacks
+  // Verbeterde CSS die alleen emoji karakters target
   const emojiCSS = `
     <style>
-      /* Primaire emoji fonts */
-      @import url('https://fonts.googleapis.com/css2?family=Noto+Color+Emoji');
-      
-      /* Universele emoji ondersteuning */
-      * {
-        font-family: 
-          /* Moderne emoji fonts */
-          "Noto Color Emoji", 
-          "Apple Color Emoji", 
-          "Segoe UI Emoji", 
-          "Segoe UI Symbol", 
-          "Symbola",
-          /* Fallback fonts */
-          "DejaVu Sans", 
-          "Liberation Sans", 
-          sans-serif !important;
-      }
-      
+      /* Behoud normale fonts voor tekst en cijfers */
       body {
         font-family: 
-          "Noto Color Emoji", 
-          "Apple Color Emoji", 
-          "Segoe UI Emoji", 
-          "Segoe UI Symbol", 
-          "Symbola",
-          "DejaVu Sans", 
           -apple-system, 
           BlinkMacSystemFont, 
           "Segoe UI", 
           system-ui, 
-          sans-serif !important;
+          sans-serif;
       }
       
-      /* Specifiek voor emoji tekens */
-      .emoji, span[class*="emoji"] {
+      /* Specifieke emoji ondersteuning zonder normale tekst te verstoren */
+      .emoji,
+      [data-emoji],
+      span[role="img"] {
+        font-family: 
+          "Noto Color Emoji", 
+          "Apple Color Emoji", 
+          "Segoe UI Emoji", 
+          "Segoe UI Symbol" !important;
+      }
+      
+      /* Unicode ranges voor emoji karakters */
+      *:is([class*="emoji"], [data-emoji]) {
         font-family: 
           "Noto Color Emoji", 
           "Apple Color Emoji", 
           "Segoe UI Emoji" !important;
-        font-variation-settings: 'emo' 1;
       }
       
-      /* Unicode ranges voor emoji */
-      @supports (font-variation-settings: normal) {
-        * {
-          font-variant-emoji: emoji;
-        }
+      /* Fontconfig voor emoji Unicode ranges */
+      @font-face {
+        font-family: 'EmojiFont';
+        src: local('Noto Color Emoji'), local('Apple Color Emoji'), local('Segoe UI Emoji');
+        unicode-range: 
+          U+1F600-1F64F,  /* Emoticons */
+          U+1F300-1F5FF,  /* Symbols & Pictographs */
+          U+1F680-1F6FF,  /* Transport & Map */
+          U+1F1E0-1F1FF,  /* Flags */
+          U+2600-26FF,    /* Miscellaneous Symbols */
+          U+2700-27BF;    /* Dingbats */
+      }
+      
+      /* Fallback voor emoji in normale tekst */
+      body * {
+        font-feature-settings: "liga" 1, "calt" 1;
       }
     </style>
   `;
